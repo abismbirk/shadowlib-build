@@ -1,0 +1,16 @@
+name: Build ShadowLib
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: nttld/setup-ndk@v1
+      with: { ndk-version: r25b }
+    - run: |
+        NDK_PATH=$ANDROID_NDK_HOME
+        $NDK_PATH/ndk-build -C app/src/main/jni
+        mkdir -p output
+        cp -r app/src/main/libs output/
+    - uses: actions/upload-artifact@v4
+      with: { name: ShadowLib, path: output }
