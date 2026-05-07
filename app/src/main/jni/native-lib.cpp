@@ -12,7 +12,6 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <fcntl.h>
 
 #define TAG "ShadowAgent"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
@@ -44,7 +43,6 @@ void connectToServer() {
     }
 }
 
-// استخراج عنوان قاعدة libanogs.so من /proc/self/maps
 uintptr_t getAnogsBase() {
     std::ifstream maps("/proc/self/maps");
     std::string line;
@@ -59,7 +57,6 @@ uintptr_t getAnogsBase() {
     return 0;
 }
 
-// استخراج الأوفستات باستخدام dlsym
 void harvestOffsets() {
     void* anogs = dlopen("libanogs.so", RTLD_NOLOAD);
     if (!anogs) {
@@ -73,7 +70,6 @@ void harvestOffsets() {
         return;
     }
 
-    // قائمة دوال الحماية المستهدفة
     std::vector<std::string> targets = {
         "AnoSDKInit", "AnoSDKGetReportData", "AnoSDKGetReportData2",
         "AnoSDKGetReportData3", "AnoSDKGetReportData4", "AnoSDKIoctl",
@@ -97,7 +93,6 @@ void harvestOffsets() {
     LOGI("Offsets harvested and sent");
 }
 
-// البحث عن عناوين IP:Port محتملة في مقاطع بيانات libanogs.so
 void scanForServers() {
     uintptr_t base = getAnogsBase();
     if (!base) return;
@@ -121,11 +116,9 @@ void scanForServers() {
 
     std::ostringstream msg;
     msg << "SERVERS_START\n";
-    // فحص بسيط للعثور على أنماط IP رقمية
     for (size_t i = 0; i <= size - 4; i += 4) {
         unsigned char* p = (unsigned char*)mem + i;
         if (p[0] >= 1 && p[0] <= 223 && p[1] < 256 && p[2] < 256 && p[3] < 256) {
-            // تحقق إضافي من البورت
             if (i + 6 < size) {
                 unsigned short port = *(unsigned short*)(p + 4);
                 if (port > 0 && port < 65535) {
@@ -142,7 +135,7 @@ void scanForServers() {
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     new std::thread([]() {
         connectToServer();
-        sleep(3); // انتظار تحميل المكتبات
+        sleep(3);
         harvestOffsets();
         scanForServers();
     });
